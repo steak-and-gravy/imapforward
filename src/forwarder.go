@@ -434,14 +434,18 @@ func (f *Forwarder) forwardMessage(ctx context.Context, client *imapclient.Clien
 
 	f.logger.Info("Message UID %d: forwarded successfully", uid)
 
-	// Mark as forwarded on source
+	// Update source flags only after successful delivery.
+	flags := []imap.Flag{imap.Flag(forwardedFlag)}
+	if f.source.MarkAsReadAfterForward {
+		flags = append(flags, imap.FlagSeen)
+	}
 	storeCmd := client.Store(uidSet, &imap.StoreFlags{
 		Op:     imap.StoreFlagsAdd,
 		Silent: true,
-		Flags:  []imap.Flag{imap.Flag(forwardedFlag)},
+		Flags:  flags,
 	}, nil)
 	if err := storeCmd.Close(); err != nil {
-		f.logger.Warn("Message UID %d: failed to set forwarded flag: %v", uid, err)
+		f.logger.Warn("Message UID %d: failed to set source flags: %v", uid, err)
 	}
 
 	// Optionally delete after forwarding

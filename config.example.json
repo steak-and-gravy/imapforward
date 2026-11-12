@@ -21,6 +21,7 @@
       },
       "folders": ["INBOX"],
       "deleteAfterForward": false,
+      "markAsReadAfterForward": false,
       "targetFolder": "Import/Work"
     },
     {
@@ -34,6 +35,7 @@
       },
       "folders": ["INBOX", "Important"],
       "deleteAfterForward": true,
+      "markAsReadAfterForward": false,
       "targetFolder": "Import/Personal"
     }
   ],

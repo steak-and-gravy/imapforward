@@ -471,3 +471,39 @@ func TestDeleteAfterForward_Default(t *testing.T) {
 		t.Error("expected deleteAfterForward default to be false")
 	}
 }
+
+func TestLoadConfig_MarkAsReadAfterForward(t *testing.T) {
+	for _, tc := range []struct {
+		name, option  string
+		want, invalid bool
+	}{
+		{name: "omitted defaults false"},
+		{name: "explicit false", option: `,"markAsReadAfterForward":false`},
+		{name: "enabled", option: `,"markAsReadAfterForward":true`, want: true},
+		{name: "reject nonboolean", option: `,"markAsReadAfterForward":"true"`, invalid: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.json")
+			raw := `{"target":{"host":"imap.example.com","port":993,"auth":{"user":"test","pass":"test"}},"sources":[{"name":"first","host":"imap.example.com","port":993,"auth":{"user":"test","pass":"test"}` + tc.option + `},{"name":"second","host":"imap.example.com","port":993,"auth":{"user":"test","pass":"test"}}]}`
+			if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			cfg, err := loadConfig(path)
+			if tc.invalid {
+				if err == nil {
+					t.Fatal("accepted a nonboolean markAsReadAfterForward")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.Sources[0].MarkAsReadAfterForward != tc.want {
+				t.Fatalf("markAsReadAfterForward=%v, want %v", cfg.Sources[0].MarkAsReadAfterForward, tc.want)
+			}
+			if cfg.Sources[1].MarkAsReadAfterForward {
+				t.Fatal("option leaked into another source account")
+			}
+		})
+	}
+}

@@ -206,6 +206,13 @@ const IMPLICIT_TLS_PORTS = new Set([465, 993]);
                         </div>
                       </div>
                       <div class="form-row">
+                        <div class="field">
+                          <label class="toggle-label">
+                            <input type="checkbox" formControlName="markAsReadAfterForward" />
+                            <span>Mark source messages as read after forwarding</span>
+                          </label>
+                          <span class="hint">Only after successful delivery; failed forwards stay unread for retry.</span>
+                        </div>
                         <div class="field field-xs">
                           <label class="toggle-label">
                             <input type="checkbox" formControlName="deleteAfterForward" />
@@ -754,6 +761,7 @@ export class ConfigTool {
           },
           folders: this.parseFolders(s?.folders as string),
           deleteAfterForward: s?.deleteAfterForward ?? false,
+          markAsReadAfterForward: s?.markAsReadAfterForward ?? false,
           ...(tf ? {targetFolder: tf} : {}),
         };
       }),
@@ -782,6 +790,7 @@ export class ConfigTool {
       }),
       folders: ['INBOX'],
       deleteAfterForward: [false],
+      markAsReadAfterForward: [false],
       targetFolder: [''],
     });
   }

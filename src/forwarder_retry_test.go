@@ -14,6 +14,12 @@ import (
 )
 
 func TestForwarderFailedUIDRetriesBeforeMarkingForwarded(t *testing.T) {
+	t.Run("leave unread", func(t *testing.T) { testForwarderFailedUIDRetries(t, false) })
+	t.Run("mark as read", func(t *testing.T) { testForwarderFailedUIDRetries(t, true) })
+}
+
+func testForwarderFailedUIDRetries(t *testing.T, markAsRead bool) {
+	t.Helper()
 	backend := imapmemserver.New()
 	user := imapmemserver.NewUser("test", "test")
 	if err := user.Create("INBOX", nil); err != nil {
@@ -53,7 +59,7 @@ func TestForwarderFailedUIDRetriesBeforeMarkingForwarded(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw := []byte("Message-ID: <original@example.com>\r\n\r\nbody")
-	appendCmd := client.Append("INBOX", int64(len(raw)), nil)
+	appendCmd := client.Append("INBOX", int64(len(raw)), &imap.AppendOptions{Flags: []imap.Flag{imap.FlagFlagged}})
 	if _, err := appendCmd.Write(raw); err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +74,7 @@ func TestForwarderFailedUIDRetriesBeforeMarkingForwarded(t *testing.T) {
 		t.Fatal(err)
 	}
 	sender := &mockSender{err: testError("simulated Gmail rejection")}
-	forwarder := NewForwarder(SourceConfig{Name: "test"}, sender, nil)
+	forwarder := NewForwarder(SourceConfig{Name: "test", MarkAsReadAfterForward: markAsRead}, sender, nil)
 	ctx := context.Background()
 	if err := forwarder.forwardNewMessages(ctx, client); err != nil {
 		t.Fatal(err)
@@ -87,12 +93,19 @@ func TestForwarderFailedUIDRetriesBeforeMarkingForwarded(t *testing.T) {
 	if len(sender.sent) != 1 || !bytes.Equal(sender.sent[0], raw) {
 		t.Fatal("failed UID was not retried with the original raw message")
 	}
-	forwarded, err := client.UIDSearch(&imap.SearchCriteria{Flag: []imap.Flag{imap.Flag(forwardedFlag)}}, nil).Wait()
+	forwarded, err := client.UIDSearch(&imap.SearchCriteria{Flag: []imap.Flag{imap.Flag(forwardedFlag), imap.FlagFlagged}}, nil).Wait()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if uids := forwarded.AllUIDs(); len(uids) != 1 || uids[0] != appended.UID {
-		t.Fatal("successful UID was not marked forwarded")
+		t.Fatal("successful UID was not marked forwarded or its existing flags were lost")
+	}
+	seen, err := client.UIDSearch(&imap.SearchCriteria{Flag: []imap.Flag{imap.FlagSeen}}, nil).Wait()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if uids := seen.AllUIDs(); (markAsRead && (len(uids) != 1 || uids[0] != appended.UID)) || (!markAsRead && len(uids) != 0) {
+		t.Fatalf("read flag does not match markAsReadAfterForward=%v", markAsRead)
 	}
 	if err := forwarder.forwardNewMessages(ctx, client); err != nil {
 		t.Fatal(err)

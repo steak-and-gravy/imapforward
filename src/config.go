@@ -14,14 +14,15 @@ type Auth struct {
 
 // SourceConfig is the configuration for a source IMAP account.
 type SourceConfig struct {
-	Name               string   `json:"name"`
-	Host               string   `json:"host"`
-	Port               int      `json:"port"`
-	Secure             *bool    `json:"secure,omitempty"`
-	Auth               Auth     `json:"auth"`
-	Folders            []string `json:"folders,omitempty"`
-	DeleteAfterForward bool     `json:"deleteAfterForward,omitempty"`
-	TargetFolder       string   `json:"targetFolder,omitempty"`
+	Name                   string   `json:"name"`
+	Host                   string   `json:"host"`
+	Port                   int      `json:"port"`
+	Secure                 *bool    `json:"secure,omitempty"`
+	Auth                   Auth     `json:"auth"`
+	Folders                []string `json:"folders,omitempty"`
+	DeleteAfterForward     bool     `json:"deleteAfterForward,omitempty"`
+	MarkAsReadAfterForward bool     `json:"markAsReadAfterForward,omitempty"`
+	TargetFolder           string   `json:"targetFolder,omitempty"`
 }
 
 // TargetConfig is the configuration for the target server (IMAP or SMTP).

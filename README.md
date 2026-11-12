@@ -67,7 +67,8 @@ Create a `config.json` file. You can use the [online configuration generator](ht
         "pass": "password"
       },
       "folders": ["INBOX"],
-      "deleteAfterForward": false
+      "deleteAfterForward": false,
+      "markAsReadAfterForward": false
     }
   ]
 }
@@ -95,6 +96,7 @@ Create a `config.json` file. You can use the [online configuration generator](ht
 | `sources[].auth.pass` | string | yes | — | IMAP password |
 | `sources[].folders` | string[] | no | `["INBOX"]` | Folders to monitor |
 | `sources[].deleteAfterForward` | boolean | no | `false` | Delete messages after forwarding |
+| `sources[].markAsReadAfterForward` | boolean | no | `false` | Mark original source messages as read only after successful forwarding. Failed messages remain unread and eligible for retry. |
 | `sources[].targetFolder` | string | no | — | Target mailbox for this source. Falls back to `target.folder`. Auto-created if it doesn't exist |
 | `healthCheck.port` | number | no | `8080` | HTTP health check server port |
 

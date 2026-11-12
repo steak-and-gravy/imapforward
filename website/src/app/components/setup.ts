@@ -30,6 +30,7 @@ import {ScrollAnimate} from '../directives/scroll-animate';
                 Use the <a href="#config">configuration generator</a> below to build it interactively.
               </p>
               <p>Gmail API imports automatically replace Message-ID values over 500 bytes with a unique ID. Other headers, body content, and attachments are preserved; no configuration option is needed.</p>
+              <p>To mark original messages as read after successful forwarding, enable <code>markAsReadAfterForward</code> for each source account. It defaults to <code>false</code>; failed forwards stay unread for retry, and destination read status is unchanged.</p>
             </div>
           </div>
 
