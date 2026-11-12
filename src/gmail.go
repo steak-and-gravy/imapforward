@@ -62,6 +62,14 @@ func (s *GmailAPISender) Send(ctx context.Context, rawMessage []byte, targetFold
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	rawMessage, changed, err := sanitizeGmailMessageID(rawMessage)
+	if err != nil {
+		return fmt.Errorf("sanitize Message-ID: %w", err)
+	}
+	if changed {
+		s.logger.Info("Replaced oversized Message-ID before Gmail import")
+	}
+
 	token, err := s.getAccessToken(ctx)
 	if err != nil {
 		return fmt.Errorf("get access token: %w", err)
@@ -134,6 +142,56 @@ func (s *GmailAPISender) Send(ctx context.Context, rawMessage []byte, targetFold
 	}
 
 	return nil
+}
+
+// sanitizeGmailMessageID replaces only oversized Message-ID field values.
+// Splicing the raw bytes avoids reserializing any other headers or MIME content.
+func sanitizeGmailMessageID(raw []byte) ([]byte, bool, error) {
+	eol := []byte("\n")
+	if firstLF := bytes.IndexByte(raw, '\n'); firstLF > 0 && raw[firstLF-1] == '\r' {
+		eol = []byte("\r\n")
+	}
+	if bytes.HasPrefix(raw, eol) {
+		return raw, false, nil // An empty header section is followed by body only.
+	}
+	separator := bytes.Repeat(eol, 2)
+	headerEnd := bytes.Index(raw, separator)
+	if headerEnd < 0 {
+		return raw, false, nil
+	}
+	headerEnd += len(eol) // Include the final header's line ending.
+
+	var out []byte
+	copied := 0
+	for start := 0; start < headerEnd; {
+		firstEnd := start + bytes.Index(raw[start:headerEnd], eol)
+		end := firstEnd + len(eol)
+		// Continuation lines belong to this field, including folded Message-IDs.
+		for end < headerEnd && (raw[end] == ' ' || raw[end] == '\t') {
+			end += bytes.Index(raw[end:headerEnd], eol) + len(eol)
+		}
+		colon := bytes.IndexByte(raw[start:firstEnd], ':')
+		if colon >= 0 && bytes.EqualFold(raw[start:start+colon], []byte("Message-ID")) {
+			valueStart := start + colon + 1
+			valueEnd := end - len(eol)
+			// RFC 5322 unfolding removes line breaks but retains folding whitespace.
+			value := bytes.Trim(bytes.ReplaceAll(raw[valueStart:valueEnd], eol, nil), " \t")
+			if len(value) > 500 {
+				var id [16]byte
+				if _, err := rand.Read(id[:]); err != nil {
+					return nil, false, fmt.Errorf("generate Message-ID: %w", err)
+				}
+				out = append(out, raw[copied:valueStart]...)
+				out = append(out, " <"+hex.EncodeToString(id[:])+"@imapforward.invalid>"...)
+				copied = valueEnd
+			}
+		}
+		start = end
+	}
+	if out == nil {
+		return raw, false, nil
+	}
+	return append(out, raw[copied:]...), true, nil
 }
 
 func (s *GmailAPISender) Close() error {

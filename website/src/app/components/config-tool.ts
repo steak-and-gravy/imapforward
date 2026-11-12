@@ -57,7 +57,7 @@ const IMPLICIT_TLS_PORTS = new Set([465, 993]);
                     <span class="hint">
                       @switch (form.get('forwardMethod')?.value) {
                         @case ('smtp') { Forwards via SMTP — enables spam filtering, adds Reply-To for replies }
-                        @case ('gmail-api') { Gmail API import — preserves all headers AND runs spam filters (requires OAuth2 setup) }
+                        @case ('gmail-api') { Gmail API import — preserves headers and runs spam filters; replaces Message-ID values over 500 bytes (requires OAuth2 setup) }
                         @default { Appends raw message via IMAP — preserves all headers, bypasses spam filters }
                       }
                     </span>

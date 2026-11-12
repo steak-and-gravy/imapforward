@@ -29,6 +29,7 @@ import {ScrollAnimate} from '../directives/scroll-animate';
                 Create a <code>config.json</code> file with your target and source IMAP accounts.
                 Use the <a href="#config">configuration generator</a> below to build it interactively.
               </p>
+              <p>Gmail API imports automatically replace Message-ID values over 500 bytes with a unique ID. Other headers, body content, and attachments are preserved; no configuration option is needed.</p>
             </div>
           </div>
 

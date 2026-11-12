@@ -130,7 +130,7 @@ Forwards messages via SMTP. Gmail's spam filters process the message normally. A
 
 #### Gmail API
 
-The best of both worlds: preserves **all original headers** (From, To, CC, etc.) **and** runs Gmail's spam/phishing filters. Uses the [Gmail API `messages.import`](https://developers.google.com/gmail/api/reference/rest/v1/users.messages/import) endpoint. Free within [Google's default quota limits](https://developers.google.com/gmail/api/reference/quota) (more than enough for email forwarding). Requires a one-time OAuth2 setup, which is more involved than the other methods.
+Preserves original headers (From, To, CC, etc.) and runs Gmail's spam/phishing filters. A `Message-ID` value exceeding Gmail's 500-byte limit is replaced with a newly generated unique Message-ID before import; all other headers, body bytes, and attachments remain unchanged. Values at or below 500 bytes are kept. Uses the [Gmail API `messages.import`](https://developers.google.com/gmail/api/reference/rest/v1/users.messages/import) endpoint. Free within [Google's default quota limits](https://developers.google.com/gmail/api/reference/quota) (more than enough for email forwarding). Requires a one-time OAuth2 setup, which is more involved than the other methods.
 
 ```json
 {
@@ -284,7 +284,7 @@ Status values: `ok` (all connected), `degraded` (some connected), `error` (none 
 3. Forwards each message to the target using the configured method:
    - **IMAP**: Appends raw RFC822 to the target mailbox, preserving all original headers
    - **SMTP**: Sends via SMTP with Reply-To injection for reply/reply-all support
-   - **Gmail API**: Imports via Gmail API with spam filtering and full header preservation
+   - **Gmail API**: Imports via Gmail API with spam filtering; only oversized Message-ID values are replaced
 4. Marks forwarded messages with a `$Forwarded` IMAP flag
 5. Enters IMAP IDLE mode to watch for new messages in real-time, or falls back to polling when the server doesn't support IDLE
 6. Automatically reconnects with exponential backoff on connection loss
